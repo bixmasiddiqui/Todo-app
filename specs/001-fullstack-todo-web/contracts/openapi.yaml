@@ -1,0 +1,453 @@
+openapi: 3.1.0
+info:
+  title: Todo API
+  description: |
+    RESTful API for Full-Stack Todo Web Application.
+
+    This API provides CRUD operations for managing todo tasks with persistent storage.
+    All operations use JSON for request/response payloads.
+
+    **Features:**
+    - Create, read, update, and delete tasks
+    - Mark tasks as complete/incomplete
+    - Automatic timestamp tracking
+    - Input validation with user-friendly error messages
+
+    **Authentication:** None (single-user application)
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.yourdomain.com
+    description: Production server (replace with actual domain)
+
+tags:
+  - name: tasks
+    description: Task management operations
+
+paths:
+  /api/todos:
+    get:
+      tags:
+        - tasks
+      summary: List all tasks
+      description: |
+        Retrieves all tasks in the system, ordered by creation date (newest first).
+
+        **Performance:** Optimized for up to 1000 tasks. Pagination may be added in future versions.
+      operationId: listTasks
+      responses:
+        '200':
+          description: Successfully retrieved task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+              examples:
+                emptyList:
+                  summary: No tasks exist
+                  value: []
+                taskList:
+                  summary: Multiple tasks
+                  value:
+                    - id: 550e8400-e29b-41d4-a716-446655440000
+                      description: Buy groceries
+                      is_completed: false
+                      created_at: '2026-01-04T10:30:00Z'
+                      updated_at: '2026-01-04T10:30:00Z'
+                    - id: 550e8400-e29b-41d4-a716-446655440001
+                      description: Finish project report
+                      is_completed: true
+                      created_at: '2026-01-04T09:15:00Z'
+                      updated_at: '2026-01-04T11:20:00Z'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - tasks
+      summary: Create a new task
+      description: |
+        Creates a new task with the provided description.
+
+        **Validation:**
+        - Description must be 1-500 characters
+        - Description cannot be empty or whitespace-only
+        - Leading/trailing whitespace is automatically trimmed
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+            examples:
+              simple:
+                summary: Simple task
+                value:
+                  description: Buy groceries
+              detailed:
+                summary: Detailed task
+                value:
+                  description: Complete the quarterly financial report with charts and analysis
+      responses:
+        '201':
+          description: Task created successfully
+          headers:
+            Location:
+              description: URL of the created task
+              schema:
+                type: string
+                format: uri
+              example: /api/todos/550e8400-e29b-41d4-a716-446655440000
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                description: Buy groceries
+                is_completed: false
+                created_at: '2026-01-04T10:30:00Z'
+                updated_at: '2026-01-04T10:30:00Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                emptyDescription:
+                  summary: Empty description
+                  value:
+                    error: Validation Error
+                    detail: Description cannot be empty or whitespace only
+                    validation_errors:
+                      - field: description
+                        message: Description cannot be empty or whitespace only
+                tooLong:
+                  summary: Description too long
+                  value:
+                    error: Validation Error
+                    detail: Description exceeds maximum length
+                    validation_errors:
+                      - field: description
+                        message: Description must be between 1 and 500 characters
+        '422':
+          description: Unprocessable entity (malformed JSON)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/todos/{task_id}:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        description: Unique task identifier (UUID)
+        schema:
+          type: string
+          format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+
+    get:
+      tags:
+        - tasks
+      summary: Get a single task
+      description: Retrieves detailed information about a specific task by ID.
+      operationId: getTask
+      responses:
+        '200':
+          description: Task found and returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                description: Buy groceries
+                is_completed: false
+                created_at: '2026-01-04T10:30:00Z'
+                updated_at: '2026-01-04T10:30:00Z'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Not Found
+                detail: Task with ID 550e8400-e29b-41d4-a716-446655440000 not found
+        '400':
+          description: Invalid task ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Bad Request
+                detail: Invalid UUID format
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - tasks
+      summary: Update a task (partial)
+      description: |
+        Updates one or more fields of an existing task.
+
+        **Partial Update:** Only provided fields are updated. Omitted fields remain unchanged.
+
+        **Validation:**
+        - If description is provided, it must be 1-500 characters
+        - If description is provided, it cannot be empty or whitespace-only
+        - is_completed must be a boolean if provided
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+            examples:
+              updateDescription:
+                summary: Update description only
+                value:
+                  description: Buy groceries and prepare dinner
+              markComplete:
+                summary: Mark task complete
+                value:
+                  is_completed: true
+              updateBoth:
+                summary: Update description and status
+                value:
+                  description: Complete quarterly report
+                  is_completed: true
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                description: Buy groceries and prepare dinner
+                is_completed: false
+                created_at: '2026-01-04T10:30:00Z'
+                updated_at: '2026-01-04T14:45:00Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                error: Validation Error
+                detail: Invalid update data
+                validation_errors:
+                  - field: description
+                    message: Description cannot be empty or whitespace only
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Not Found
+                detail: Task with ID 550e8400-e29b-41d4-a716-446655440000 not found
+        '422':
+          description: Unprocessable entity (malformed JSON)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - tasks
+      summary: Delete a task
+      description: |
+        Permanently deletes a task from the system.
+
+        **Warning:** This operation is irreversible. Deleted tasks cannot be recovered.
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted successfully (no content returned)
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Not Found
+                detail: Task with ID 550e8400-e29b-41d4-a716-446655440000 not found
+        '400':
+          description: Invalid task ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Bad Request
+                detail: Invalid UUID format
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Task:
+      type: object
+      description: Complete task object with all fields
+      required:
+        - id
+        - description
+        - is_completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique task identifier (UUID v4)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Task description (1-500 characters, whitespace trimmed)
+          example: Buy groceries
+        is_completed:
+          type: boolean
+          description: Task completion status
+          default: false
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: Task creation timestamp (ISO 8601 with timezone)
+          example: '2026-01-04T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: Last modification timestamp (ISO 8601 with timezone)
+          example: '2026-01-04T10:30:00Z'
+
+    TaskCreate:
+      type: object
+      description: Request payload for creating a new task
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Task description (1-500 characters, leading/trailing whitespace will be trimmed)
+          example: Buy groceries
+
+    TaskUpdate:
+      type: object
+      description: Request payload for updating an existing task (partial update)
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Updated task description (optional)
+          example: Buy groceries and prepare dinner
+        is_completed:
+          type: boolean
+          description: Updated completion status (optional)
+          example: true
+
+    Error:
+      type: object
+      description: Standard error response
+      required:
+        - error
+        - detail
+      properties:
+        error:
+          type: string
+          description: Error type or code
+          example: Not Found
+        detail:
+          type: string
+          description: Human-readable error message
+          example: Task with ID 550e8400-e29b-41d4-a716-446655440000 not found
+
+    ValidationError:
+      type: object
+      description: Validation error response with field-level details
+      required:
+        - error
+        - detail
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: Validation Error
+        detail:
+          type: string
+          description: Summary of validation error
+          example: Invalid input data
+        validation_errors:
+          type: array
+          description: List of field-specific validation errors
+          items:
+            type: object
+            required:
+              - field
+              - message
+            properties:
+              field:
+                type: string
+                description: Field name that failed validation
+                example: description
+              message:
+                type: string
+                description: Field-specific error message
+                example: Description cannot be empty or whitespace only
+
+  securitySchemes: {}
+  # No security schemes - single-user application with no authentication
+
+security: []
+# No security applied - single-user application
