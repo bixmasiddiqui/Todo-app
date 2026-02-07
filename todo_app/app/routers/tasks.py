@@ -16,18 +16,6 @@ async def create_task(
     task_data: TaskCreate,
     session: Session = Depends(get_db),
 ) -> TaskResponse:
-    """Create a new task.
-
-    Args:
-        task_data: Task creation data
-        session: Database session
-
-    Returns:
-        TaskResponse: Created task
-
-    Raises:
-        HTTPException: 422 if validation fails
-    """
     task = TaskService.create_task(session, task_data)
     return TaskResponse.model_validate(task)
 
@@ -36,14 +24,6 @@ async def create_task(
 async def get_all_tasks(
     session: Session = Depends(get_db),
 ) -> list[TaskResponse]:
-    """Get all tasks ordered by creation date (newest first).
-
-    Args:
-        session: Database session
-
-    Returns:
-        list[TaskResponse]: List of all tasks
-    """
     tasks = TaskService.get_all_tasks(session)
     return [TaskResponse.model_validate(task) for task in tasks]
 
@@ -53,18 +33,6 @@ async def get_task(
     task_id: UUID,
     session: Session = Depends(get_db),
 ) -> TaskResponse:
-    """Get a task by ID.
-
-    Args:
-        task_id: Task UUID
-        session: Database session
-
-    Returns:
-        TaskResponse: Task details
-
-    Raises:
-        HTTPException: 404 if task not found
-    """
     task = TaskService.get_task_by_id(session, task_id)
     if not task:
         raise HTTPException(
@@ -80,20 +48,6 @@ async def update_task(
     task_data: TaskUpdate,
     session: Session = Depends(get_db),
 ) -> TaskResponse:
-    """Update a task.
-
-    Args:
-        task_id: Task UUID
-        task_data: Task update data
-        session: Database session
-
-    Returns:
-        TaskResponse: Updated task
-
-    Raises:
-        HTTPException: 404 if task not found
-        HTTPException: 422 if validation fails
-    """
     task = TaskService.update_task(session, task_id, task_data)
     if not task:
         raise HTTPException(
@@ -108,15 +62,6 @@ async def delete_task(
     task_id: UUID,
     session: Session = Depends(get_db),
 ) -> None:
-    """Delete a task.
-
-    Args:
-        task_id: Task UUID
-        session: Database session
-
-    Raises:
-        HTTPException: 404 if task not found
-    """
     deleted = TaskService.delete_task(session, task_id)
     if not deleted:
         raise HTTPException(

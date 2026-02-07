@@ -2,7 +2,9 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 from .config import settings
+from .database import create_db
 
 app = FastAPI(
     title="Todo API",
@@ -21,28 +23,21 @@ app.add_middleware(
 )
 
 
-# Exception handlers
+@app.on_event("startup")
+def on_startup():
+    create_db()
+
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
-    """Handle 404 Not Found errors."""
     return JSONResponse(
         status_code=404,
         content={"error": "Not Found", "detail": str(exc.detail)},
     )
 
 
-@app.exception_handler(422)
-async def validation_error_handler(request: Request, exc: HTTPException):
-    """Handle 422 Validation errors."""
-    return JSONResponse(
-        status_code=422,
-        content={"error": "Validation Error", "detail": str(exc.detail)},
-    )
-
-
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc: Exception):
-    """Handle 500 Internal Server errors."""
     return JSONResponse(
         status_code=500,
         content={"error": "Internal Server Error", "detail": "An unexpected error occurred"},
@@ -51,13 +46,11 @@ async def internal_error_handler(request: Request, exc: Exception):
 
 @app.get("/")
 async def root():
-    """Root endpoint."""
     return {"message": "Todo API", "docs": "/docs"}
 
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
     return {"status": "healthy"}
 
 
