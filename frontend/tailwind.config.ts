@@ -6,6 +6,7 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -16,6 +17,10 @@ const config: Config = {
           600: '#4f46e5',
           700: '#4338ca',
         },
+      },
+      fontFamily: {
+        pixel: ['var(--font-pixel)', 'monospace'],
+        sans: ['var(--font-inter)', 'sans-serif'],
       },
     },
   },

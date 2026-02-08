@@ -22,7 +22,10 @@ class TaskService:
         Returns:
             Task: Created task instance
         """
-        task = Task(description=task_data.description)
+        task = Task(
+            title=task_data.title,
+            description=task_data.description,
+        )
         session.add(task)
         session.commit()
         session.refresh(task)
@@ -71,10 +74,12 @@ class TaskService:
         if not task:
             return None
 
+        if task_data.title is not None:
+            task.title = task_data.title
         if task_data.description is not None:
             task.description = task_data.description
-        if task_data.is_completed is not None:
-            task.is_completed = task_data.is_completed
+        if task_data.completed is not None:
+            task.completed = task_data.completed
 
         task.updated_at = datetime.utcnow()
         session.add(task)

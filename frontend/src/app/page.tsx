@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import TaskInput from '@/components/TaskInput'
 import TaskList from '@/components/TaskList'
+import ChatBot from '@/components/ChatBot'
 import { fetchTasks, createTask, updateTask, deleteTask } from '@/lib/api'
 import type { Task } from '@/types/task'
 
@@ -11,8 +12,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [initialLoad, setInitialLoad] = useState(true)
+  const [showLevelUp, setShowLevelUp] = useState(false)
 
-  // Fetch tasks on mount
+  const completedCount = tasks.filter(t => t.completed).length
+  const totalCount = tasks.length
+  const xp = completedCount * 25
+  const level = Math.floor(xp / 100) + 1
+  const xpInLevel = xp % 100
+
   useEffect(() => {
     loadTasks()
   }, [])
@@ -29,11 +36,11 @@ export default function Home() {
     }
   }
 
-  const handleTaskCreate = async (description: string) => {
+  const handleTaskCreate = async (title: string) => {
     try {
       setIsLoading(true)
       setError(null)
-      const newTask = await createTask({ description })
+      const newTask = await createTask({ title })
       setTasks([newTask, ...tasks])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create task')
@@ -42,36 +49,43 @@ export default function Home() {
     }
   }
 
-  const handleTaskToggle = async (taskId: string, isCompleted: boolean) => {
+  const handleTaskToggle = async (taskId: string, completed: boolean) => {
     try {
       setError(null)
-      // Optimistic update
+      const prevCompleted = tasks.filter(t => t.completed).length
       setTasks(
         tasks.map((task) =>
-          task.id === taskId ? { ...task, is_completed: isCompleted } : task
+          task.id === taskId ? { ...task, completed } : task
         )
       )
-      await updateTask(taskId, { is_completed: isCompleted })
+      await updateTask(taskId, { completed })
+
+      if (completed) {
+        const newXp = (prevCompleted + 1) * 25
+        const newLevel = Math.floor(newXp / 100) + 1
+        const oldLevel = Math.floor(prevCompleted * 25 / 100) + 1
+        if (newLevel > oldLevel) {
+          setShowLevelUp(true)
+          setTimeout(() => setShowLevelUp(false), 2000)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task')
-      // Rollback on error
       loadTasks()
     }
   }
 
-  const handleTaskUpdate = async (taskId: string, description: string) => {
+  const handleTaskUpdate = async (taskId: string, title: string) => {
     try {
       setError(null)
-      // Optimistic update
       setTasks(
         tasks.map((task) =>
-          task.id === taskId ? { ...task, description } : task
+          task.id === taskId ? { ...task, title } : task
         )
       )
-      await updateTask(taskId, { description })
+      await updateTask(taskId, { title })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task')
-      // Rollback on error
       loadTasks()
     }
   }
@@ -79,49 +93,94 @@ export default function Home() {
   const handleTaskDelete = async (taskId: string) => {
     try {
       setError(null)
-      // Optimistic update
       setTasks(tasks.filter((task) => task.id !== taskId))
       await deleteTask(taskId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task')
-      // Rollback on error
       loadTasks()
     }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 sm:py-12">
+    <main className="min-h-screen relative z-10 py-6 sm:py-10 scanline-overlay">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8 sm:mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg flex items-center justify-center">
-              <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-            </div>
+
+        {/* Header - Game Title */}
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="inline-block mb-4 animate-float">
+            <div className="text-5xl sm:text-6xl mb-2">&#x1F3AE;</div>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-gray-900 via-indigo-900 to-gray-900 dark:from-white dark:via-indigo-200 dark:to-white bg-clip-text text-transparent mb-3">
-            Task Master
+          <h1 className="font-pixel text-2xl sm:text-3xl neon-text-cyan mb-3 tracking-wider">
+            QUEST LOG
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-            Organize your day, accomplish your goals
+          <p className="text-sm text-cyan-300/60 font-pixel tracking-wide">
+            Level up your productivity
           </p>
         </div>
 
+        {/* Stats Bar */}
+        <div className="game-card rounded-xl p-4 mb-6 animate-slide-in">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {/* Level Badge */}
+            <div className={`flex items-center gap-3 ${showLevelUp ? 'animate-level-up' : ''}`}>
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/40 flex items-center justify-center">
+                <span className="font-pixel text-yellow-400 text-sm">LV</span>
+              </div>
+              <div>
+                <div className="font-pixel text-yellow-400 text-lg">{level}</div>
+                <div className="text-xs text-yellow-500/60">LEVEL</div>
+              </div>
+            </div>
+
+            {/* XP Bar */}
+            <div className="flex-1 min-w-[150px]">
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-pixel text-[10px] text-green-400/80">XP</span>
+                <span className="font-pixel text-[10px] text-green-400/60">{xpInLevel}/100</span>
+              </div>
+              <div className="xp-bar-track h-3 rounded-full overflow-hidden">
+                <div
+                  className="xp-bar-fill h-full rounded-full"
+                  style={{ width: `${xpInLevel}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Quest Stats */}
+            <div className="flex gap-4">
+              <div className="text-center">
+                <div className="font-pixel text-cyan-400 text-lg">{totalCount}</div>
+                <div className="text-[10px] text-cyan-500/60 font-pixel">QUESTS</div>
+              </div>
+              <div className="text-center">
+                <div className="font-pixel text-green-400 text-lg">{completedCount}</div>
+                <div className="text-[10px] text-green-500/60 font-pixel">DONE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Level Up Notification */}
+        {showLevelUp && (
+          <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 animate-scale-in">
+            <div className="game-card rounded-xl px-8 py-4 neon-border-green">
+              <div className="font-pixel text-green-400 text-center">
+                <div className="text-lg mb-1">LEVEL UP!</div>
+                <div className="text-xs text-green-300/70">Level {level} reached</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg animate-shake">
+          <div className="mb-6 p-4 rounded-xl border border-red-500/40 bg-red-900/20 animate-shake">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-800 dark:text-red-200">{error}</p>
-              </div>
+              <span className="text-red-400 font-pixel text-xs mt-0.5">ERROR</span>
+              <p className="text-sm text-red-300 flex-1">{error}</p>
               <button
                 onClick={() => setError(null)}
-                className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300 smooth-transition"
+                className="text-red-400 hover:text-red-300 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -131,16 +190,32 @@ export default function Home() {
           </div>
         )}
 
-        {/* Main card */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-200/50 dark:border-gray-700/50">
+        {/* Main Game Panel */}
+        <div className="game-card rounded-2xl p-6 sm:p-8 animate-pulse-glow">
+          {/* Section Title */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+            <span className="font-pixel text-[10px] text-cyan-400/70 tracking-widest">NEW QUEST</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/30 to-transparent"></div>
+          </div>
+
           <TaskInput onTaskCreate={handleTaskCreate} isLoading={isLoading} />
 
+          {/* Quest List Section */}
+          <div className="flex items-center gap-2 mb-4 mt-2">
+            <div className="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse"></div>
+            <span className="font-pixel text-[10px] text-fuchsia-400/70 tracking-widest">ACTIVE QUESTS</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-fuchsia-500/30 to-transparent"></div>
+          </div>
+
           {initialLoad ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
-                <div className="w-12 h-12 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin absolute top-0 left-0"></div>
+            <div className="flex flex-col justify-center items-center py-16">
+              <div className="relative w-16 h-16 mb-4">
+                <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin"></div>
+                <div className="absolute inset-2 rounded-full border-2 border-fuchsia-400 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
               </div>
+              <span className="font-pixel text-[10px] text-cyan-400/60 animate-pulse">LOADING...</span>
             </div>
           ) : (
             <TaskList
@@ -153,15 +228,23 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 animate-fade-in">
-          <p>
-            Built with ❤️ using Next.js, FastAPI & PostgreSQL
+        <div className="mt-8 text-center animate-fade-in">
+          <p className="font-pixel text-[8px] text-cyan-500/30 tracking-widest">
+            QUEST LOG v3.0 // NEXT.JS + FASTAPI + AI CHATBOT
           </p>
-          <p className="mt-1 text-xs">
-            Double-click tasks to edit • Click delete twice to confirm
+          <p className="text-[10px] text-cyan-500/20 mt-2">
+            Double-click quests to edit // Click chat icon for AI assistant
           </p>
         </div>
       </div>
+
+      {/* AI Chatbot */}
+      <ChatBot
+        tasks={tasks}
+        onAddTask={handleTaskCreate}
+        onToggleTask={handleTaskToggle}
+        onDeleteTask={handleTaskDelete}
+      />
     </main>
   )
 }

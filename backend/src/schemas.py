@@ -1,5 +1,6 @@
 """Pydantic schemas for request/response validation."""
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -9,20 +10,22 @@ class TaskCreate(BaseModel):
     """Schema for creating a new task.
 
     Attributes:
-        description: Task description (1-500 characters, trimmed)
+        title: Task title (1-200 characters, trimmed)
+        description: Optional task description (max 1000 characters)
     """
 
-    description: str = Field(..., min_length=1, max_length=500)
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
 
-    @field_validator('description')
+    @field_validator('title')
     @classmethod
-    def trim_and_validate_description(cls, v: str) -> str:
-        """Trim whitespace and validate description."""
+    def trim_and_validate_title(cls, v: str) -> str:
+        """Trim whitespace and validate title."""
         trimmed = v.strip()
         if not trimmed:
-            raise ValueError('Description cannot be empty or whitespace only')
-        if len(trimmed) > 500:
-            raise ValueError('Description must be 500 characters or less')
+            raise ValueError('Title cannot be empty or whitespace only')
+        if len(trimmed) > 200:
+            raise ValueError('Title must be 200 characters or less')
         return trimmed
 
 
@@ -30,24 +33,26 @@ class TaskUpdate(BaseModel):
     """Schema for updating a task.
 
     Attributes:
-        description: Optional new description (1-500 characters, trimmed)
-        is_completed: Optional new completion status
+        title: Optional new title (1-200 characters, trimmed)
+        description: Optional new description (max 1000 characters)
+        completed: Optional new completion status
     """
 
-    description: str | None = Field(None, min_length=1, max_length=500)
-    is_completed: bool | None = None
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    completed: Optional[bool] = None
 
-    @field_validator('description')
+    @field_validator('title')
     @classmethod
-    def trim_and_validate_description(cls, v: str | None) -> str | None:
-        """Trim whitespace and validate description."""
+    def trim_and_validate_title(cls, v: str | None) -> str | None:
+        """Trim whitespace and validate title."""
         if v is None:
             return None
         trimmed = v.strip()
         if not trimmed:
-            raise ValueError('Description cannot be empty or whitespace only')
-        if len(trimmed) > 500:
-            raise ValueError('Description must be 500 characters or less')
+            raise ValueError('Title cannot be empty or whitespace only')
+        if len(trimmed) > 200:
+            raise ValueError('Title must be 200 characters or less')
         return trimmed
 
 
@@ -56,15 +61,17 @@ class TaskResponse(BaseModel):
 
     Attributes:
         id: Task UUID
+        title: Task title
         description: Task description
-        is_completed: Completion status
+        completed: Completion status
         created_at: Creation timestamp
         updated_at: Last update timestamp
     """
 
     id: UUID
-    description: str
-    is_completed: bool
+    title: str
+    description: Optional[str]
+    completed: bool
     created_at: datetime
     updated_at: datetime
 

@@ -8,19 +8,17 @@ describe('TaskInput Component', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    expect(screen.getByPlaceholderText('What needs to be done?')).toBeInTheDocument()
-    expect(screen.getByText('Add Task')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Enter your quest...')).toBeInTheDocument()
+    expect(screen.getByText('Accept Quest')).toBeInTheDocument()
   })
 
   it('calls onTaskCreate when form is submitted with valid input', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const input = screen.getByPlaceholderText('What needs to be done?')
-    const button = screen.getByText('Add Task')
-
+    const input = screen.getByPlaceholderText('Enter your quest...')
     fireEvent.change(input, { target: { value: 'Buy groceries' } })
-    fireEvent.click(button)
+    fireEvent.submit(input.closest('form')!)
 
     expect(mockOnCreate).toHaveBeenCalledWith('Buy groceries')
   })
@@ -29,8 +27,8 @@ describe('TaskInput Component', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const button = screen.getByText('Add Task')
-    fireEvent.click(button)
+    const input = screen.getByPlaceholderText('Enter your quest...')
+    fireEvent.submit(input.closest('form')!)
 
     expect(mockOnCreate).not.toHaveBeenCalled()
   })
@@ -39,7 +37,7 @@ describe('TaskInput Component', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const input = screen.getByPlaceholderText('What needs to be done?')
+    const input = screen.getByPlaceholderText('Enter your quest...')
     fireEvent.change(input, { target: { value: '  Buy groceries  ' } })
     fireEvent.submit(input.closest('form')!)
 
@@ -50,7 +48,7 @@ describe('TaskInput Component', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const input = screen.getByPlaceholderText('What needs to be done?') as HTMLInputElement
+    const input = screen.getByPlaceholderText('Enter your quest...') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'Buy groceries' } })
     fireEvent.submit(input.closest('form')!)
 
@@ -61,14 +59,11 @@ describe('TaskInput Component', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const input = screen.getByPlaceholderText('What needs to be done?')
-    const button = screen.getByText('Add Task')
+    const input = screen.getByPlaceholderText('Enter your quest...')
+    fireEvent.change(input, { target: { value: '   ' } })
+    fireEvent.submit(input.closest('form')!)
 
-    // Try to submit empty
-    fireEvent.change(input, { target: { value: '' } })
-    fireEvent.click(button)
-
-    expect(screen.getByText('Task description cannot be empty')).toBeInTheDocument()
+    expect(screen.getByText('Quest description cannot be empty!')).toBeInTheDocument()
   })
 
   it('disables button when isLoading is true', () => {
@@ -76,17 +71,16 @@ describe('TaskInput Component', () => {
     render(<TaskInput onTaskCreate={mockOnCreate} isLoading={true} />)
 
     const button = screen.getByText('Adding...') as HTMLButtonElement
-    expect(button).toBeDisabled()
+    expect(button.closest('button')).toBeDisabled()
   })
 
   it('shows character count when typing', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const input = screen.getByPlaceholderText('What needs to be done?')
+    const input = screen.getByPlaceholderText('Enter your quest...')
     fireEvent.change(input, { target: { value: 'Test' } })
 
-    // Should show remaining characters (500 - 4 = 496)
     expect(screen.getByText('496')).toBeInTheDocument()
   })
 
@@ -94,9 +88,18 @@ describe('TaskInput Component', () => {
     const mockOnCreate = vi.fn()
     render(<TaskInput onTaskCreate={mockOnCreate} />)
 
-    const input = screen.getByPlaceholderText('What needs to be done?') as HTMLInputElement
-
-    // Maximum is 500 characters
+    const input = screen.getByPlaceholderText('Enter your quest...') as HTMLInputElement
     expect(input.maxLength).toBe(500)
+  })
+
+  it('submits on Enter key press', () => {
+    const mockOnCreate = vi.fn()
+    render(<TaskInput onTaskCreate={mockOnCreate} />)
+
+    const input = screen.getByPlaceholderText('Enter your quest...')
+    fireEvent.change(input, { target: { value: 'My quest' } })
+    fireEvent.submit(input.closest('form')!)
+
+    expect(mockOnCreate).toHaveBeenCalledWith('My quest')
   })
 })

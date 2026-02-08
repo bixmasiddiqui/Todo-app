@@ -11,8 +11,9 @@ class Task(SQLModel, table=True):
 
     Attributes:
         id: Unique identifier (UUID)
-        description: Task description text
-        is_completed: Completion status
+        title: Task title text
+        description: Optional task description
+        completed: Completion status
         created_at: Timestamp when task was created
         updated_at: Timestamp when task was last updated
     """
@@ -20,7 +21,8 @@ class Task(SQLModel, table=True):
     __tablename__ = "tasks"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    description: str = Field(max_length=500, nullable=False)
-    is_completed: bool = Field(default=False, nullable=False)
+    title: str = Field(max_length=200, nullable=False)
+    description: Optional[str] = Field(default=None, max_length=1000, nullable=True)
+    completed: bool = Field(default=False, nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)

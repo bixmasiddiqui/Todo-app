@@ -3,8 +3,9 @@
  */
 export interface Task {
   id: string
-  description: string
-  is_completed: boolean
+  title: string
+  description: string | null
+  completed: boolean
   created_at: string
   updated_at: string
 }
@@ -13,13 +14,15 @@ export interface Task {
  * Task creation payload matching backend TaskCreate schema
  */
 export interface TaskCreate {
-  description: string
+  title: string
+  description?: string
 }
 
 /**
  * Task update payload matching backend TaskUpdate schema
  */
 export interface TaskUpdate {
+  title?: string
   description?: string
-  is_completed?: boolean
+  completed?: boolean
 }
