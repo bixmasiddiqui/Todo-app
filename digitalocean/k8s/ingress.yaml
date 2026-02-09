@@ -1,0 +1,39 @@
+# Production ingress with TLS (cert-manager + Let's Encrypt)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-app-ingress
+  namespace: todo-app
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://todo.yourdomain.com"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - todo.yourdomain.com
+        - api.todo.yourdomain.com
+      secretName: todo-app-tls
+  rules:
+    - host: api.todo.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: todo-backend
+                port:
+                  number: 8000
+    - host: todo.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: todo-frontend
+                port:
+                  number: 3000

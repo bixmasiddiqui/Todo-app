@@ -1,0 +1,50 @@
+# Default values for todo-app Helm chart
+
+namespace: todo-app
+
+# Backend (FastAPI) configuration
+backend:
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: Never  # Local images in Minikube
+  replicas: 1
+  port: 8000
+  nodePort: 30800
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  env:
+    CORS_ORIGINS: "http://localhost:3000"
+    ENVIRONMENT: "development"
+
+# Frontend (Next.js) configuration
+frontend:
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: Never
+  replicas: 1
+  port: 3000
+  nodePort: 30300
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# Secrets
+secrets:
+  databaseUrl: ""  # Set via --set secrets.databaseUrl=<base64-value>
+
+# Ingress
+ingress:
+  enabled: true
+  host: todo.local
+  className: nginx

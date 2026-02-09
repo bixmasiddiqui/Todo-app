@@ -1,11 +1,29 @@
 """Business logic for task operations."""
+import logging
 from datetime import datetime
 from uuid import UUID
 
 from sqlmodel import Session, select
 
+from ..config import settings
 from ..models import Task
 from ..schemas import TaskCreate, TaskUpdate
+
+logger = logging.getLogger(__name__)
+
+# Lazy-init Kafka producer (only when enabled)
+_event_producer = None
+
+
+def _get_event_producer():
+    global _event_producer
+    if _event_producer is None and settings.kafka_enabled:
+        try:
+            from ..events.kafka_producer import TaskEventProducer
+            _event_producer = TaskEventProducer(settings.kafka_bootstrap_servers)
+        except Exception as e:
+            logger.warning(f"Kafka producer unavailable: {e}")
+    return _event_producer
 
 
 class TaskService:
@@ -29,6 +47,12 @@ class TaskService:
         session.add(task)
         session.commit()
         session.refresh(task)
+
+        # Publish Kafka event (fire-and-forget)
+        producer = _get_event_producer()
+        if producer:
+            producer.task_created(task.id, task.title)
+
         return task
 
     @staticmethod
@@ -85,6 +109,13 @@ class TaskService:
         session.add(task)
         session.commit()
         session.refresh(task)
+
+        # Publish Kafka event (fire-and-forget)
+        producer = _get_event_producer()
+        if producer:
+            changes = task_data.model_dump(exclude_unset=True)
+            producer.task_updated(task.id, changes)
+
         return task
 
     @staticmethod
@@ -104,4 +135,10 @@ class TaskService:
 
         session.delete(task)
         session.commit()
+
+        # Publish Kafka event (fire-and-forget)
+        producer = _get_event_producer()
+        if producer:
+            producer.task_deleted(task_id)
+
         return True

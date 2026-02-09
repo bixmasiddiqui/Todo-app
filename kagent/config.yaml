@@ -1,0 +1,50 @@
+# kagent configuration
+# Kubernetes AI agent for autonomous cluster management
+# See: https://github.com/kagent-dev/kagent
+
+apiVersion: kagent.dev/v1alpha1
+kind: AgentConfig
+metadata:
+  name: todo-app-agent
+  namespace: todo-app
+spec:
+  # Target namespace for monitoring
+  targetNamespace: todo-app
+
+  # Capabilities the agent can use
+  capabilities:
+    - pod-logs
+    - pod-describe
+    - deployment-status
+    - service-endpoints
+    - ingress-status
+    - resource-metrics
+
+  # Monitoring rules
+  monitoring:
+    interval: 60s
+    rules:
+      - name: pod-crash-detection
+        condition: "pod.restartCount > 3"
+        action: "describe pod and collect logs"
+        severity: warning
+
+      - name: deployment-not-ready
+        condition: "deployment.readyReplicas < deployment.replicas"
+        action: "check pod events and container status"
+        severity: critical
+
+  # Natural language query support
+  queries:
+    enabled: true
+    examples:
+      - "Why is the backend pod crashing?"
+      - "Are all services healthy in todo-app?"
+      - "What resources are consuming the most CPU?"
+      - "Show me the recent events for the todo-backend deployment"
+
+  # LLM provider for AI-powered analysis
+  llm:
+    provider: openai
+    model: gpt-4
+    # API key set via KAGENT_OPENAI_API_KEY env var

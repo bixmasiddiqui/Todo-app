@@ -1,0 +1,50 @@
+# kubectl-ai configuration
+# AI-powered kubectl plugin that translates natural language to K8s operations
+# Installation: kubectl krew install ai
+# Usage: kubectl ai "show all pods in todo-app namespace"
+
+# Default namespace for AI queries
+defaultNamespace: todo-app
+
+# Model configuration
+model:
+  provider: openai
+  name: gpt-4
+
+# Predefined prompts for common Todo app operations
+prompts:
+  - name: status
+    description: "Check overall health of the Todo app"
+    template: "Show the status of all deployments, pods, and services in the todo-app namespace"
+
+  - name: logs-backend
+    description: "View backend logs"
+    template: "Show the last 50 lines of logs from the todo-backend deployment in todo-app namespace"
+
+  - name: logs-frontend
+    description: "View frontend logs"
+    template: "Show the last 50 lines of logs from the todo-frontend deployment in todo-app namespace"
+
+  - name: scale
+    description: "Scale a deployment"
+    template: "Scale the {component} deployment in todo-app namespace to {replicas} replicas"
+
+  - name: restart
+    description: "Restart a deployment"
+    template: "Rollout restart the {component} deployment in the todo-app namespace"
+
+  - name: describe-pod
+    description: "Describe a failing pod"
+    template: "Describe the pods that are not in Running state in the todo-app namespace"
+
+# Safety: require confirmation before destructive operations
+requireConfirmation: true
+
+# Allowed operations
+allowedOperations:
+  - get
+  - describe
+  - logs
+  - top
+  - scale
+  - rollout

@@ -1,0 +1,12 @@
+# ConfigMap - non-sensitive environment configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-app-config
+  namespace: todo-app
+  labels:
+    app: todo-app
+data:
+  CORS_ORIGINS: "http://localhost:3000,http://todo-frontend.todo-app.svc.cluster.local:3000"
+  ENVIRONMENT: "development"
+  NEXT_PUBLIC_API_URL: "http://localhost:8000"

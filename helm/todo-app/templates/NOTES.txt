@@ -1,0 +1,12 @@
+=== Todo App Deployed Successfully! ===
+
+Backend:  http://{{ .Values.ingress.host }}/api/todos
+Frontend: http://{{ .Values.ingress.host }}/
+API Docs: http://{{ .Values.ingress.host }}/docs
+
+If using Minikube, add to hosts file:
+  $(minikube ip) {{ .Values.ingress.host }}
+
+NodePort access (alternative):
+  Backend:  http://$(minikube ip):{{ .Values.backend.nodePort }}
+  Frontend: http://$(minikube ip):{{ .Values.frontend.nodePort }}

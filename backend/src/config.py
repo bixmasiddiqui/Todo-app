@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     database_url: str
     cors_origins: str = "http://localhost:3000"
     environment: str = "development"
+    kafka_enabled: bool = False
+    kafka_bootstrap_servers: str = "localhost:9092"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 

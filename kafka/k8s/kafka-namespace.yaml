@@ -1,0 +1,7 @@
+# Kafka namespace for K8s deployment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka
+  labels:
+    app: kafka

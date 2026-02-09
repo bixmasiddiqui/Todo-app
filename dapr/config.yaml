@@ -1,0 +1,16 @@
+# Dapr sidecar configuration
+# Dapr provides distributed application building blocks
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: todo-app-config
+  namespace: todo-app
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.default.svc.cluster.local:9411/api/v2/spans"
+  httpPipeline:
+    handlers: []
+  metric:
+    enabled: true

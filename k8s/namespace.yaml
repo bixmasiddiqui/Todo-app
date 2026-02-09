@@ -1,0 +1,8 @@
+# Namespace isolates all Todo app resources
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: todo-app
+  labels:
+    app: todo-app
+    environment: development

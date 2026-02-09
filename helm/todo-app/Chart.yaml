@@ -1,0 +1,13 @@
+apiVersion: v2
+name: todo-app
+description: Helm chart for Full-Stack Todo Application (FastAPI + Next.js)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Bisma Imran
+keywords:
+  - todo
+  - fastapi
+  - nextjs
+  - kubernetes

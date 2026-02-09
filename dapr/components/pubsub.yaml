@@ -1,0 +1,19 @@
+# Dapr Pub/Sub component backed by Kafka
+# Allows backend to publish task events via Dapr abstraction
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+  namespace: todo-app
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "kafka.kafka.svc.cluster.local:9092"
+    - name: consumerGroup
+      value: "todo-app-group"
+    - name: authType
+      value: "none"
+    - name: maxMessageBytes
+      value: "1048576"

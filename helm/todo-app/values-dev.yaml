@@ -1,0 +1,16 @@
+# Development overrides for Minikube
+backend:
+  image:
+    pullPolicy: Never
+  replicas: 1
+  env:
+    ENVIRONMENT: "development"
+
+frontend:
+  image:
+    pullPolicy: Never
+  replicas: 1
+
+ingress:
+  enabled: true
+  host: todo.local

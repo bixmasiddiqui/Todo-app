@@ -1,0 +1,81 @@
+# Backend Deployment + Service
+# FastAPI API server with health checks and resource limits
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+  namespace: todo-app
+  labels:
+    app: todo-app
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-app
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: todo-app
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: todo-backend:latest
+          imagePullPolicy: Never  # Use local images in Minikube
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: todo-app-secrets
+                  key: DATABASE_URL
+          envFrom:
+            - configMapRef:
+                name: todo-app-config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+# Backend Service - NodePort for Minikube access
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-backend
+  namespace: todo-app
+  labels:
+    app: todo-app
+    component: backend
+spec:
+  type: NodePort
+  selector:
+    app: todo-app
+    component: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+      nodePort: 30800

@@ -1,0 +1,19 @@
+# Dapr State Store component backed by PostgreSQL
+# Uses the same Neon PostgreSQL as the main application
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-statestore
+  namespace: todo-app
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      secretKeyRef:
+        name: todo-app-secrets
+        key: DATABASE_URL
+    - name: tableName
+      value: "dapr_state"
+    - name: metadataTableName
+      value: "dapr_metadata"

@@ -1,0 +1,31 @@
+# Kafka topic definitions
+# Topics are auto-created by the broker, but this documents them
+# Apply with: kubectl apply -f kafka-topics.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-topics-config
+  namespace: kafka
+  labels:
+    app: kafka
+data:
+  # Topic definitions for the Todo app
+  topics.json: |
+    {
+      "topics": [
+        {
+          "name": "todo.task.events",
+          "description": "Task lifecycle events (created, updated, deleted)",
+          "partitions": 3,
+          "replication_factor": 1,
+          "retention_ms": 604800000
+        },
+        {
+          "name": "todo.task.analytics",
+          "description": "Task analytics and metrics events",
+          "partitions": 1,
+          "replication_factor": 1,
+          "retention_ms": 2592000000
+        }
+      ]
+    }

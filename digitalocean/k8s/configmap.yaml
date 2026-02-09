@@ -1,0 +1,11 @@
+# Production ConfigMap for DigitalOcean DOKS
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-app-config
+  namespace: todo-app
+data:
+  CORS_ORIGINS: "https://todo.yourdomain.com"
+  ENVIRONMENT: "production"
+  KAFKA_ENABLED: "true"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.kafka.svc.cluster.local:9092"
