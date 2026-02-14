@@ -30,25 +30,16 @@ class TaskService:
     """Service layer for task operations."""
 
     @staticmethod
-    def create_task(session: Session, task_data: TaskCreate) -> Task:
-        """Create a new task.
-
-        Args:
-            session: Database session
-            task_data: Task creation data
-
-        Returns:
-            Task: Created task instance
-        """
+    def create_task(session: Session, task_data: TaskCreate, user_id: UUID) -> Task:
         task = Task(
             title=task_data.title,
             description=task_data.description,
+            user_id=user_id,
         )
         session.add(task)
         session.commit()
         session.refresh(task)
 
-        # Publish Kafka event (fire-and-forget)
         producer = _get_event_producer()
         if producer:
             producer.task_created(task.id, task.title)
@@ -56,46 +47,22 @@ class TaskService:
         return task
 
     @staticmethod
-    def get_all_tasks(session: Session) -> list[Task]:
-        """Get all tasks ordered by creation date (newest first).
-
-        Args:
-            session: Database session
-
-        Returns:
-            list[Task]: List of all tasks
-        """
-        statement = select(Task).order_by(Task.created_at.desc())
+    def get_all_tasks(session: Session, user_id: UUID) -> list[Task]:
+        statement = select(Task).where(Task.user_id == user_id).order_by(Task.created_at.desc())
         tasks = session.exec(statement).all()
         return list(tasks)
 
     @staticmethod
-    def get_task_by_id(session: Session, task_id: UUID) -> Task | None:
-        """Get a task by ID.
-
-        Args:
-            session: Database session
-            task_id: Task UUID
-
-        Returns:
-            Task | None: Task instance if found, None otherwise
-        """
-        return session.get(Task, task_id)
+    def get_task_by_id(session: Session, task_id: UUID, user_id: UUID) -> Task | None:
+        task = session.get(Task, task_id)
+        if task and task.user_id != user_id:
+            return None
+        return task
 
     @staticmethod
-    def update_task(session: Session, task_id: UUID, task_data: TaskUpdate) -> Task | None:
-        """Update a task.
-
-        Args:
-            session: Database session
-            task_id: Task UUID
-            task_data: Task update data
-
-        Returns:
-            Task | None: Updated task instance if found, None otherwise
-        """
+    def update_task(session: Session, task_id: UUID, task_data: TaskUpdate, user_id: UUID) -> Task | None:
         task = session.get(Task, task_id)
-        if not task:
+        if not task or task.user_id != user_id:
             return None
 
         if task_data.title is not None:
@@ -110,7 +77,6 @@ class TaskService:
         session.commit()
         session.refresh(task)
 
-        # Publish Kafka event (fire-and-forget)
         producer = _get_event_producer()
         if producer:
             changes = task_data.model_dump(exclude_unset=True)
@@ -119,24 +85,14 @@ class TaskService:
         return task
 
     @staticmethod
-    def delete_task(session: Session, task_id: UUID) -> bool:
-        """Delete a task.
-
-        Args:
-            session: Database session
-            task_id: Task UUID
-
-        Returns:
-            bool: True if task was deleted, False if not found
-        """
+    def delete_task(session: Session, task_id: UUID, user_id: UUID) -> bool:
         task = session.get(Task, task_id)
-        if not task:
+        if not task or task.user_id != user_id:
             return False
 
         session.delete(task)
         session.commit()
 
-        # Publish Kafka event (fire-and-forget)
         producer = _get_event_producer()
         if producer:
             producer.task_deleted(task_id)

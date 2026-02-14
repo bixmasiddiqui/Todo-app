@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     kafka_enabled: bool = False
     kafka_bootstrap_servers: str = "localhost:9092"
+    jwt_secret_key: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 1440
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 

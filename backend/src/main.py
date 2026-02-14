@@ -63,6 +63,7 @@ async def health():
 
 
 # Import and include routers
-from .routers import tasks
+from .routers import tasks, auth
 
+app.include_router(auth.router)
 app.include_router(tasks.router)

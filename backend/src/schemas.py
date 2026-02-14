@@ -3,7 +3,43 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+# --- Auth Schemas ---
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+
+    @field_validator('email')
+    @classmethod
+    def lowercase_email(cls, v: str) -> str:
+        return v.lower().strip()
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+    @field_validator('email')
+    @classmethod
+    def lowercase_email(cls, v: str) -> str:
+        return v.lower().strip()
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
 
 
 class TaskCreate(BaseModel):
